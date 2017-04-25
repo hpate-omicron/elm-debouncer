@@ -9,6 +9,6 @@
   "author": "Matthew Conger-Eldeen <mceldeen@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "elm": "^0.17.1"
+    "elm": "^0.18.0"
   }
 }

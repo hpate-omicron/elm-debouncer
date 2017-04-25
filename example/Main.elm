@@ -1,6 +1,5 @@
 module Main exposing (main)
 
-import Html.App as App
 import Html exposing (Html)
 import Html.Events as Html
 import Html.Attributes as Attr
@@ -8,9 +7,9 @@ import Task exposing (Task)
 import Debouncer
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
-    App.program
+    Html.program
         { init = init
         , view = view
         , update = update
@@ -24,7 +23,7 @@ type alias Model =
 
 type Msg
     = QueryUpdated String
-    | ResultComputed String
+    | ResultComputed (Result Never String)
 
 
 init : ( Model, Cmd Msg )
@@ -40,20 +39,23 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ( query, result ) =
     case msg of
-        QueryUpdated query' ->
-            ( query', result ) ! [ computeResult query' ]
+        QueryUpdated newQuery ->
+            ( newQuery, result ) ! [ computeResult newQuery ]
 
-        ResultComputed result' ->
-            ( query, result' ) ! []
+        ResultComputed (Ok newResult) ->
+            ( query, newResult ) ! []
+
+        _ ->
+            ( query, result ) ! []
 
 
 computeResult : String -> Cmd Msg
 computeResult query =
     lazyTask (\_ -> spin 5000000 query)
-        |> debounceQuery identity ResultComputed
+        |> debounceQuery ResultComputed
 
 
-debounceQuery : (a -> msg) -> (b -> msg) -> Task a b -> Cmd msg
+debounceQuery : (Result x a -> msg) -> Task x a -> Cmd msg
 debounceQuery =
     Debouncer.debounce "query" 300
 
@@ -61,7 +63,7 @@ debounceQuery =
 lazyTask : (() -> a) -> Task x a
 lazyTask f =
     Task.succeed f
-        `Task.andThen` (\g -> Task.succeed <| g ())
+        |> Task.andThen (\g -> Task.succeed <| g ())
 
 
 spin : Int -> a -> a
